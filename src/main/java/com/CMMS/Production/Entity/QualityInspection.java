@@ -11,20 +11,40 @@ import java.time.LocalDateTime;
 @Data
 public class QualityInspection {
     @Id
-    private long id;
-    private String inspection_number;
-    @OneToOne
-    private ProductionOrder production_order;
-    @ManyToOne
-    private Employee inspector;
-    private enum Result {
-        PASS , FAIL ,PENDING
-    }
-    private Result inspection_result;
-    @Lob
-    @Column(columnDefinition = "TEXT")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "inspectionNumber", nullable = false, unique = true, length = 50)
+    private String inspectionNumber;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "productionOrderId", nullable = false, unique = true)
+    private ProductionOrder productionOrderId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "inspectorId", nullable = false)
+    private Employee inspectorId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "inspectionResult", nullable = false)
+    private Result inspectionResult = Result.PENDING;
+
+    @Column(columnDefinition = "text")
     private String remarks;
-    @Column(name = "inspected_at", columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
-    private LocalDateTime inspected_at;
+
+    @Column(name = "inspectedAt", nullable = false, updatable = false)
+    private LocalDateTime inspectedAt;
+
+    @Column(name = "createdAt", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "createdBy", nullable = false, updatable = false)
+    private Long createdBy;
+
+    @Column(name = "lastModifiedAt", nullable = false)
+    private LocalDateTime lastModifiedAt;
+
+    @Column(name = "lastModifiedBy", nullable = false)
+    private Long lastModifiedBy;
 
 }
