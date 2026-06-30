@@ -14,7 +14,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name="VehicleInventory")
+@Table(name="VehicleInventory",schema = "CmmsTables")
 @Data
 public class VehicleInventory {
     @Id

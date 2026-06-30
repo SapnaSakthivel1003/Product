@@ -19,7 +19,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "production_orders")
+@Table(name = "production_orders",schema = "CmmsTables")
 @Data
 @RequiredArgsConstructor
 @EntityListeners(AuditingEntityListener.class)

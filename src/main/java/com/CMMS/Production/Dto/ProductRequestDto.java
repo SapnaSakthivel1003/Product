@@ -16,10 +16,4 @@ public class ProductRequestDto {
     private Integer completedQuantity;
     private LocalDate expectedEndDate;
     private LocalDate actualEndDate;
-
-    // Plain fields without Spring Data annotations
-    private LocalDateTime createdAt;
-    private Long createdBy;
-    private LocalDateTime lastModifiedAt;
-    private Long lastModifiedBy;
 }
