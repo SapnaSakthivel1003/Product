@@ -7,7 +7,7 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name="QualityInspection")
+@Table(name="QualityInspection",schema = "CmmsTables")
 @Data
 public class QualityInspection {
     @Id

@@ -1,5 +1,7 @@
 package com.CMMS.Production.Service;
 
+import com.CMMS.Human.Resources.UserContext.UserContext;
+import com.CMMS.Human.Resources.UserContext.UserContextHolder;
 import com.CMMS.Master.Data.Entity.CarModel;
 import com.CMMS.Master.Data.Entity.Plants;
 import com.CMMS.Master.Data.Repository.CarModelRepository;
@@ -9,6 +11,7 @@ import com.CMMS.Production.Dto.ProductResponseDto;
 import com.CMMS.Production.Entity.OrderStatus;
 import com.CMMS.Production.Entity.ProductionOrder;
 import com.CMMS.Production.Repository.ProductRepository;
+import com.CMMS.Production.Utils.ProductionOrderMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -23,8 +26,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ProductOrderServiceImp implements ProductOrderService {
     private final ProductRepository productRepository;
-    private final PlantsRepository plantRepository; // Injecting PlantRepository for FK verification
+    private final PlantsRepository plantRepository;
     private final CarModelRepository carModelRepository;
+    private final ProductionOrderMapper productionOrderMapper;
     @Override
     public ProductResponseDto saveProduct(ProductRequestDto requestDto) {
         if (requestDto == null || requestDto.getPlantId() == null || requestDto.getCarModelId()==null) {
@@ -34,16 +38,21 @@ public class ProductOrderServiceImp implements ProductOrderService {
         validatePlantExistence(requestDto.getPlantId());
         validateCarModelExistence(requestDto.getCarModelId());
 
-        ProductionOrder product = mapToEntity(requestDto);
+        UserContext context = UserContextHolder.getContext();
+        Long userId = (context != null && context.getUserId() != null) ? context.getUserId() : 0L;
+
+        ProductionOrder product = productionOrderMapper.mapToEntity(requestDto);
         String dateString = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         String randomSuffix = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         String generatedCode = "PO-" + dateString + "-" + randomSuffix;
         product.setOrderNumber(generatedCode);
-
+        product.setCreatedAt(LocalDateTime.now());
+        product.setLastModifiedAt(LocalDateTime.now());
+        product.setCreatedBy(userId);
+        product.setLastModifiedBy(userId);
         ProductionOrder savedProduct = productRepository.save(product);
-        savedProduct.setCreatedAt(LocalDateTime.now());
-        savedProduct.setLastModifiedAt(LocalDateTime.now());
-        return mapToResponseDto(savedProduct);
+
+        return productionOrderMapper.mapToResponseDto(savedProduct);
     }
 
     @Override
@@ -54,6 +63,9 @@ public class ProductOrderServiceImp implements ProductOrderService {
         Plants plant = plantRepository.findById(requestDto.getPlantId())
                 .orElseThrow(() -> new RuntimeException("Plant not found"));
 
+        UserContext context = UserContextHolder.getContext();
+        Long userId = (context != null && context.getUserId() != null) ? context.getUserId() : 0L;
+
         CarModel carModer=carModelRepository.findById(requestDto.getCarModelId()).orElseThrow(() -> new RuntimeException("CarModel not found"));
         existingProduct.setOrderNumber(requestDto.getOrderNumber());
         existingProduct.setPlantId(plant);
@@ -63,10 +75,11 @@ public class ProductOrderServiceImp implements ProductOrderService {
         existingProduct.setCompletedQuantity(requestDto.getCompletedQuantity());
         existingProduct.setExpectedEndDate(requestDto.getExpectedEndDate());
         existingProduct.setActualEndDate(requestDto.getActualEndDate());
-
+        existingProduct.setLastModifiedAt(LocalDateTime.now());
+        existingProduct.setLastModifiedBy(userId);
         ProductionOrder updatedProduct = productRepository.save(existingProduct);
-        updatedProduct.setLastModifiedAt(LocalDateTime.now());
-        return mapToResponseDto(existingProduct);
+
+        return productionOrderMapper.mapToResponseDto(updatedProduct);
     }
 
     @Override
@@ -74,7 +87,7 @@ public class ProductOrderServiceImp implements ProductOrderService {
     public ProductResponseDto getById(Long id) {
         ProductionOrder product = productRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("product not found with ID: " + id));
-        return mapToResponseDto(product);
+        return productionOrderMapper.mapToResponseDto(product);
     }
 
     @Override
@@ -82,7 +95,7 @@ public class ProductOrderServiceImp implements ProductOrderService {
     public List<ProductResponseDto> getAll() {
         return productRepository.findAll()
                 .stream()
-                .map(this::mapToResponseDto)
+                .map(productionOrderMapper::mapToResponseDto)
                 .collect(Collectors.toList());
     }
 
@@ -104,46 +117,5 @@ public class ProductOrderServiceImp implements ProductOrderService {
             throw new IllegalArgumentException("Foreign key violation: Plant ID " + carModelId + " does not exist.");
         }
     }
-    // --- Mapper Logic ---
-    private ProductionOrder mapToEntity(ProductRequestDto dto) {
-        Plants plant = plantRepository.findById(dto.getPlantId())
-                .orElseThrow(() -> new RuntimeException("Plant not found"));
-        CarModel carModer=carModelRepository.findById(dto.getCarModelId()).orElseThrow(() -> new RuntimeException("Plant not found"));
-        ProductionOrder product = new ProductionOrder();
-        product.setOrderNumber(dto.getOrderNumber());
-        product.setPlantId(plant);
-        product.setCarModelId(carModer);
-        product.setStatus(OrderStatus.valueOf(dto.getStatus()));
-        product.setTargetQuantity(dto.getTargetQuantity());
-        product.setCompletedQuantity(dto.getCompletedQuantity());
-        product.setExpectedEndDate(dto.getExpectedEndDate());
-        product.setActualEndDate(dto.getActualEndDate());
-        product.setCreatedAt(dto.getCreatedAt());
-        product.setCreatedBy(dto.getCreatedBy());
-        product.setLastModifiedAt(dto.getLastModifiedAt());
-        product.setLastModifiedBy(dto.getLastModifiedBy());
 
-        return product;
-    }
-
-    private ProductResponseDto mapToResponseDto(ProductionOrder dto) {
-        Plants plant = plantRepository.findById(dto.getPlantId().getId())
-                .orElseThrow(() -> new RuntimeException("Plant not found"));
-        CarModel carModer=carModelRepository.findById(dto.getCarModelId().getId()).orElseThrow(() -> new RuntimeException("Plant not found"));
-
-        ProductResponseDto product = new ProductResponseDto();
-        product.setOrderNumber(dto.getOrderNumber());
-        product.setPlantId(plant.getId());
-        product.setCarModelId(carModer.getId());
-        product.setStatus(dto.getStatus().name());
-        product.setTargetQuantity(dto.getTargetQuantity());
-        product.setCompletedQuantity(dto.getCompletedQuantity());
-        product.setExpectedEndDate(dto.getExpectedEndDate());
-        product.setActualEndDate(dto.getActualEndDate());
-        product.setCreatedAt(dto.getCreatedAt());
-        product.setCreatedBy(dto.getCreatedBy());
-        product.setLastModifiedAt(dto.getLastModifiedAt());
-        product.setLastModifiedBy(dto.getLastModifiedBy());
-        return product;
-    }
 }
