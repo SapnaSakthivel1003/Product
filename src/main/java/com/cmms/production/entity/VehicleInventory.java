@@ -1,0 +1,71 @@
+package com.cmms.production.entity;
+
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import lombok.Data;
+import org.hibernate.annotations.SoftDelete;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedBy;
+import org.springframework.data.annotation.LastModifiedDate;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name="VehicleInventory",schema = "CmmsTables")
+@Data
+@SoftDelete(columnName = "is_deleted")
+public class VehicleInventory {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @NotNull
+    @Size(min = 17, max = 17)
+    @Column(length = 17, unique = true, updatable = false, nullable = false)
+    private String vin;
+
+    @NotNull
+
+    @JoinColumn( nullable = false)
+    private Long productionOrder;
+
+    @NotNull(message = "carModel is required")
+    @Column(nullable = false)
+    private Long carModel;
+
+    @NotNull
+    @Column(nullable = false)
+    private String color;
+
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Status status;
+
+    @NotNull
+    @Column(name = "manufactured_date", updatable = false, nullable = false)
+    private LocalDate manufacturedDate;
+
+    @NotNull
+    @CreatedDate
+    @Column(name = "created_at", updatable = false, nullable = false)
+    private LocalDateTime createdAt;
+
+    @NotNull
+    @CreatedBy
+    @Column(name = "created_by", updatable = false, nullable = false)
+    private Long createdBy;
+
+    @NotNull
+    @LastModifiedDate
+    @Column(name = "last_modified_at", nullable = false)
+    private LocalDateTime lastModifiedAt;
+
+    @NotNull
+    @LastModifiedBy
+    @Column(name = "last_modified_by", nullable = false)
+    private Long lastModifiedBy;
+}
