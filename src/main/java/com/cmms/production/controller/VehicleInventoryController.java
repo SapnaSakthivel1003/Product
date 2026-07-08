@@ -59,4 +59,9 @@ public class VehicleInventoryController {
     public ResponseEntity<Boolean> existsVehicleInventoryById(@PathVariable Long id) {
         return ResponseEntity.ok(vehicleInventoryRepository.existsById(id));
     }
+    @PutMapping("/{id}/status")
+    public ResponseEntity<Void> updateStatus(@PathVariable Long id, @RequestParam String status) {
+        vehicleInventoryService.updateStatus(id, status);
+        return ResponseEntity.ok().build();
+    }
 }

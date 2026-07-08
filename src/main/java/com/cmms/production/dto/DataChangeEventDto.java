@@ -4,11 +4,20 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class DataChangeEventDto {
-    private String status;
-    private String entityName;
+    private String tableName;
+    private Long recordId;
+    private String action;
     private String changedData;
+    private Long performedBy;
+    private String ipAddress;
+    private LocalDateTime createdAt;
+    private Long createdBy;
+    private LocalDateTime lastModifiedAt;
+    private Long lastModifiedBy;
 }
