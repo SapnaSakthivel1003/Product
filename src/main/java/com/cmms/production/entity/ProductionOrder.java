@@ -40,7 +40,7 @@ public class ProductionOrder {
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
-    private Status status;
+    private OrderStatus status;
 
     @NotNull
     @Min(value = 1, message = "Target quantity must be greater than 0")

@@ -1,4 +1,4 @@
-package com.cmms.production.feignClients;
+package com.cmms.production.dto;
 
 import lombok.Data;
 

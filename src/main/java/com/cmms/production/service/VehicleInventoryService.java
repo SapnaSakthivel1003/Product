@@ -11,4 +11,6 @@ public interface VehicleInventoryService {
     List<VehicleInventoryResponseDto> getAll();
     VehicleInventoryResponseDto updateVehicleInventory(Long id, VehicleInventoryRequestDto requestDto);
     void deleteById(Long id);
+    void updateStatus(Long id, String status);
+
 }

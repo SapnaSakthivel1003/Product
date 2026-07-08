@@ -2,6 +2,7 @@ package com.cmms.production.utils;
 
 import com.cmms.production.dto.ProductRequestDto;
 import com.cmms.production.dto.ProductResponseDto;
+import com.cmms.production.entity.OrderStatus;
 import com.cmms.production.entity.ProductionOrder;
 import com.cmms.production.entity.Status;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +17,7 @@ public class ProductionOrderMapper {
         product.setOrderNumber(dto.getOrderNumber());
         product.setPlantId(dto.getPlantId());
         product.setCarModelId(dto.getCarModelId());
-        product.setStatus(Status.valueOf(dto.getStatus()));
+        product.setStatus(OrderStatus.valueOf(dto.getStatus()));
         product.setTargetQuantity(dto.getTargetQuantity());
         product.setCompletedQuantity(dto.getCompletedQuantity());
         product.setExpectedEndDate(dto.getExpectedEndDate());
