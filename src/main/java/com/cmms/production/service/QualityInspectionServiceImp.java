@@ -8,6 +8,7 @@ import com.cmms.production.entity.Result;
 import com.cmms.production.feignClients.AuditLogFeignClient;
 import com.cmms.production.feignClients.NotifyFeignClient;
 import com.cmms.production.feignClients.Production;
+import com.cmms.production.feignClients.UserClient;
 import com.cmms.production.repository.ProductRepository;
 import com.cmms.production.repository.QualityInspectionRepository;
 import com.cmms.production.user_context.UserContext;
@@ -16,6 +17,8 @@ import com.cmms.production.utils.QualityInspectionMapper;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 
@@ -39,6 +42,8 @@ public class QualityInspectionServiceImp implements QualityInspectionService{
     private final AuditLogFeignClient feignClient;
     private final ObjectMapper objectMapper;
     private final NotifyFeignClient notifyFeignClient;
+    private final UserClient userClient;
+   private final EmailNotificationService emailNotificationService;
     @Override
     public QualityInspectionResponseDto saveQualityInspection(QualityInspectionRequestDto requestDto) {
         if (requestDto == null || requestDto.getInspectorId() == null || requestDto.getProductionOrderId()==null) {
@@ -54,7 +59,7 @@ public class QualityInspectionServiceImp implements QualityInspectionService{
         }
         EmployeeResponseDto employeeResponseDto=productionClient.getEmployeeById(requestDto.getInspectorId()).getBody();
         assert employeeResponseDto != null;
-        if(!employeeResponseDto.getIsActive()){
+        if(Boolean.FALSE.equals(employeeResponseDto.getIsActive())){
             throw new RuntimeException("Employee must be Active ");
         }
         UserContext context = UserContextHolder.getContext();
@@ -85,17 +90,17 @@ public class QualityInspectionServiceImp implements QualityInspectionService{
                 .orElseThrow(() -> new RuntimeException("Employee not found with ID: " + id));
 
         String oldResult = String.valueOf(existingQualityInspection.getInspectionResult());
-        Boolean employeeExists = productionClient.existsCarModelById(requestDto.getInspectorId());
+        Boolean employeeExists = productionClient.existsEmployeeById(requestDto.getInspectorId());
 
         if (Boolean.FALSE.equals(employeeExists)) {
-            throw new IllegalArgumentException("production ID " + requestDto.getInspectorId() + " does not exist in master data.");
+            throw new IllegalArgumentException("employeeExists ID " + requestDto.getInspectorId() + " does not exist in master data.");
         }
         if (!productRepository.existsById(requestDto.getProductionOrderId())) {
             throw new IllegalArgumentException("Foreign key violation: production ID  does not exist.");
         }
         EmployeeResponseDto employeeResponseDto=productionClient.getEmployeeById(requestDto.getInspectorId()).getBody();
         assert employeeResponseDto != null;
-        if(!employeeResponseDto.getIsActive()){
+        if(Boolean.FALSE.equals(employeeResponseDto.getIsActive())){
             throw new RuntimeException("Employee must be Active ");
         }
         UserContext context = UserContextHolder.getContext();
@@ -112,6 +117,18 @@ public class QualityInspectionServiceImp implements QualityInspectionService{
             if ("FAIL".equals(newResult) && !"FAIL".equals(oldResult)){
                 log.info(">>> [QUALITY] State transitioned to FAIL. Triggering Plant Manager notifications.");
                 sendNotifyRequest("PLANT_MANAGER", savedQualityInspection);
+
+
+                List<String> plantManagerEmails = List.of("sapnasakthivel794@gmail.com", "6036sapna@gmail.com");
+                for (String email : plantManagerEmails) {
+                    emailNotificationService.sendFailureEmail(
+                            email,
+                            existingQualityInspection.getProductionOrderId(),
+                            existingQualityInspection.getInspectionNumber()
+
+                    );
+                }
+
             } else {
                 log.info(">>> [QUALITY] Notification skipped. Previous: {}, Current: {}", oldResult, newResult);
             }
@@ -180,7 +197,7 @@ public class QualityInspectionServiceImp implements QualityInspectionService{
             return "127.0.0.1";
         }
     }
-    private void sendNotifyRequest(String role,QualityInspection savedQualityInspection) throws Exception {
+    private void sendNotifyRequest(String role,QualityInspection savedQualityInspection)  {
         UserContext context = UserContextHolder.getContext();
         Long userId = (context != null && context.getUserId() != null) ? context.getUserId() : 0L;
         String message="Order number of the Product is :"+savedQualityInspection.getProductionOrderId()+"and inpectiom id is :"+savedQualityInspection.getInspectionNumber();
@@ -195,4 +212,5 @@ public class QualityInspectionServiceImp implements QualityInspectionService{
         dto.setLastModifiedAt(LocalDateTime.now());
         notifyFeignClient.createNotifications(dto);
     }
+
 }
