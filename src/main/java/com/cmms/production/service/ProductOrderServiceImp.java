@@ -53,15 +53,22 @@ public class ProductOrderServiceImp implements ProductOrderService {
             throw new IllegalArgumentException("Car Model ID " + requestDto.getCarModelId() + " does not exist in master data.");
         }
         PlantResponseDto plantResponseDto= productionClient.getPlantById(requestDto.getPlantId()).getBody();
-        assert plantResponseDto != null;
-        if(!Boolean.TRUE.equals(plantResponseDto.getIsActive())){
-            throw new RuntimeException("Plant must be Active ");
+        if (plantResponseDto == null) {
+            throw new RuntimeException("Plant data is missing");
+        }
+        boolean isActive = plantResponseDto.getActive() != null && plantResponseDto.getActive();
+
+        if (!isActive) {
+            throw new RuntimeException("Plant must be Active");
+        }
+        CarModelResponseDto carModelResponseDto=productionClient.getCarModelById(requestDto.getCarModelId()).getBody();
+        if (carModelResponseDto == null) {
+            throw new RuntimeException("Plant data is missing");
         }
 
-        CarModelResponseDto carModelResponseDto=productionClient.getCarModelById(requestDto.getCarModelId()).getBody();
-        assert carModelResponseDto != null;
-        if(!carModelResponseDto.isActive()){
-            throw new RuntimeException("CarModel must be Active ");
+        boolean isActive1 = carModelResponseDto.isActive();
+        if (!isActive1) {
+            throw new RuntimeException("CarModel must be Active");
         }
 
         UserContext context = UserContextHolder.getContext();
@@ -104,13 +111,13 @@ public class ProductOrderServiceImp implements ProductOrderService {
         }
         PlantResponseDto plantResponseDto= productionClient.getPlantById(requestDto.getPlantId()).getBody();
         assert plantResponseDto != null;
-        if(!Boolean.TRUE.equals(plantResponseDto.getIsActive())){
+        if(!Boolean.TRUE.equals(plantResponseDto.getActive())){
             throw new RuntimeException("Plant must be Active ");
         }
 
         CarModelResponseDto carModelResponseDto=productionClient.getCarModelById(requestDto.getCarModelId()).getBody();
         assert carModelResponseDto != null;
-        if(!carModelResponseDto.isActive()){
+        if(!Boolean.TRUE.equals(carModelResponseDto.isActive())){
             throw new RuntimeException("CarModel must be Active ");
         }
 

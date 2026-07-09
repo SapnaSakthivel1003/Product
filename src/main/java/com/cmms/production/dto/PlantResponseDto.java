@@ -9,5 +9,5 @@ public class PlantResponseDto {
     private String code;
     private String location;
     private Integer capacityPerDay;
-    private Boolean isActive;
+    private Boolean active;
 }

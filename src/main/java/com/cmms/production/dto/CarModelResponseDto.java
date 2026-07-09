@@ -16,7 +16,7 @@ public class CarModelResponseDto {
     private BigDecimal basePrice;
     private List<String> colorOptions;
     private LocalDate launchDate;
-    private boolean isActive;
+    private boolean active;
     private LocalDateTime createdAt;
     private Long createdBy;
     private LocalDateTime lastModifiedAt;
