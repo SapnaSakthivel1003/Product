@@ -1,4 +1,4 @@
-package com.cmms.production.feignClients;
+package com.cmms.production.feignclients;
 
 import com.cmms.production.dto.CarModelResponseDto;
 import com.cmms.production.dto.EmployeeResponseDto;

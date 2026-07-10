@@ -4,7 +4,6 @@ import com.cmms.production.dto.ProductRequestDto;
 import com.cmms.production.dto.ProductResponseDto;
 import com.cmms.production.entity.OrderStatus;
 import com.cmms.production.entity.ProductionOrder;
-import com.cmms.production.entity.Status;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

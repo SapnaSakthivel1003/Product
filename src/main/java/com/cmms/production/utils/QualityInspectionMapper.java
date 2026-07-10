@@ -2,7 +2,6 @@ package com.cmms.production.utils;
 
 import com.cmms.production.dto.QualityInspectionRequestDto;
 import com.cmms.production.dto.QualityInspectionResponseDto;
-import com.cmms.production.entity.ProductionOrder;
 import com.cmms.production.entity.QualityInspection;
 import com.cmms.production.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;

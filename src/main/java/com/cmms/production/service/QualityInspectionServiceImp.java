@@ -1,24 +1,18 @@
 package com.cmms.production.service;
 
 import com.cmms.production.dto.*;
-import com.cmms.production.entity.OrderStatus;
-import com.cmms.production.entity.ProductionOrder;
 import com.cmms.production.entity.QualityInspection;
-import com.cmms.production.entity.Result;
-import com.cmms.production.feignClients.AuditLogFeignClient;
-import com.cmms.production.feignClients.NotifyFeignClient;
-import com.cmms.production.feignClients.Production;
-import com.cmms.production.feignClients.UserClient;
+import com.cmms.production.feignclients.AuditLogFeignClient;
+import com.cmms.production.feignclients.NotifyFeignClient;
+import com.cmms.production.feignclients.Production;
+import com.cmms.production.feignclients.UserClient;
 import com.cmms.production.repository.ProductRepository;
 import com.cmms.production.repository.QualityInspectionRepository;
 import com.cmms.production.user_context.UserContext;
 import com.cmms.production.user_context.UserContextHolder;
 import com.cmms.production.utils.QualityInspectionMapper;
-import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 
@@ -118,8 +112,7 @@ public class QualityInspectionServiceImp implements QualityInspectionService{
                 log.info(">>> [QUALITY] State transitioned to FAIL. Triggering Plant Manager notifications.");
                 sendNotifyRequest("PLANT_MANAGER", savedQualityInspection);
 
-
-                List<String> plantManagerEmails = List.of("sapnasakthivel794@gmail.com", "6036sapna@gmail.com");
+                List<String> plantManagerEmails = List.of("sapna.s@mitrahsoft.in");
                 for (String email : plantManagerEmails) {
                     emailNotificationService.sendFailureEmail(
                             email,

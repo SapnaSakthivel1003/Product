@@ -1,4 +1,4 @@
-package com.cmms.production.feignClients;
+package com.cmms.production.feignclients;
 
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
