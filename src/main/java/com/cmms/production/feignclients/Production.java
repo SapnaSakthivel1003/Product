@@ -1,8 +1,10 @@
 package com.cmms.production.feignclients;
 
-import com.cmms.production.dto.CarModelResponseDto;
-import com.cmms.production.dto.EmployeeResponseDto;
-import com.cmms.production.dto.PlantResponseDto;
+
+import com.cmms.production.dto.ExistenceResponseDto;
+import com.cmms.production.exception_handler.CarModelApiResponse;
+import com.cmms.production.exception_handler.EmployeeApiResponse;
+import com.cmms.production.exception_handler.PlantApiResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,21 +14,21 @@ public interface Production {
 
 
     @GetMapping("/master-data/carModel/exists/{id}")
-    Boolean existsCarModelById(@PathVariable("id") Long id);
+    ExistenceResponseDto existsCarModelById(@PathVariable("id") Long id);
 
     @GetMapping("/master-data/plant/exists/{id}")
-    Boolean existsPlantById(@PathVariable("id") Long id);
+    ResponseEntity<ExistenceResponseDto> existsPlantById(@PathVariable("id") Long id);
 
     @GetMapping("/master-data/employee/exists/{id}")
-    Boolean existsEmployeeById(@PathVariable("id") Long id);
+    ExistenceResponseDto existsEmployeeById(@PathVariable("id") Long id);
 
     @GetMapping("/master-data/employee/{id}")
-    ResponseEntity<EmployeeResponseDto> getEmployeeById(@PathVariable("id") long id);
+    ResponseEntity<EmployeeApiResponse> getEmployeeById(@PathVariable("id") long id);
 
     @GetMapping("/master-data/plant/{id}")
-    ResponseEntity<PlantResponseDto> getPlantById(@PathVariable("id") long id);
+    ResponseEntity<PlantApiResponse> getPlantById(@PathVariable("id") long id);
 
     @GetMapping("/master-data/carModel/{id}")
-    ResponseEntity<CarModelResponseDto> getCarModelById(@PathVariable("id") long id);
+    ResponseEntity<CarModelApiResponse> getCarModelById(@PathVariable("id") long id);
 
 }

@@ -23,6 +23,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -43,16 +44,8 @@ public class ProductOrderServiceImp implements ProductOrderService {
             throw new IllegalArgumentException("IDs must not be null in the request data.");
         }
 
-        Boolean plantExists = productionClient.existsPlantById(requestDto.getPlantId());
-        Boolean carModelExists = productionClient.existsCarModelById(requestDto.getCarModelId());
 
-        if (Boolean.FALSE.equals(plantExists)) {
-            throw new IllegalArgumentException("Plant ID " + requestDto.getPlantId() + " does not exist in master data.");
-        }
-        if (Boolean.FALSE.equals(carModelExists)) {
-            throw new IllegalArgumentException("Car Model ID " + requestDto.getCarModelId() + " does not exist in master data.");
-        }
-        PlantResponseDto plantResponseDto= productionClient.getPlantById(requestDto.getPlantId()).getBody();
+        PlantResponseDto plantResponseDto= Objects.requireNonNull(productionClient.getPlantById(requestDto.getPlantId()).getBody()).getData();
         if (plantResponseDto == null) {
             throw new RuntimeException("Plant data is missing");
         }
@@ -61,9 +54,10 @@ public class ProductOrderServiceImp implements ProductOrderService {
         if (!isActive) {
             throw new RuntimeException("Plant must be Active");
         }
-        CarModelResponseDto carModelResponseDto=productionClient.getCarModelById(requestDto.getCarModelId()).getBody();
+
+        CarModelResponseDto carModelResponseDto= Objects.requireNonNull(productionClient.getCarModelById(requestDto.getCarModelId()).getBody()).getData();
         if (carModelResponseDto == null) {
-            throw new RuntimeException("Plant data is missing");
+            throw new RuntimeException("carModel data is missing");
         }
 
         boolean isActive1 = carModelResponseDto.isActive();
@@ -98,26 +92,17 @@ public class ProductOrderServiceImp implements ProductOrderService {
     public ProductResponseDto updateProduct(Long id, ProductRequestDto requestDto) {
         OrderStatus targetStatus = OrderStatus.valueOf(requestDto.getStatus());
         ProductionOrder existingProduct = productRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Employee not found with ID: " + id));
+                .orElseThrow(() -> new RuntimeException("ProductionOrder not found with ID: " + id));
 
-        Boolean plantExists = productionClient.existsPlantById(requestDto.getPlantId());
-        Boolean carModelExists = productionClient.existsCarModelById(requestDto.getCarModelId());
-
-        if (Boolean.FALSE.equals(plantExists)) {
-            throw new IllegalArgumentException("Plant ID " + requestDto.getPlantId() + " does not exist in master data.");
-        }
-        if (Boolean.FALSE.equals(carModelExists)) {
-            throw new IllegalArgumentException("Car Model ID " + requestDto.getCarModelId() + " does not exist in master data.");
-        }
-        PlantResponseDto plantResponseDto= productionClient.getPlantById(requestDto.getPlantId()).getBody();
+        PlantResponseDto plantResponseDto= Objects.requireNonNull(productionClient.getPlantById(requestDto.getPlantId()).getBody()).getData();
         assert plantResponseDto != null;
         if(!Boolean.TRUE.equals(plantResponseDto.getActive())){
             throw new RuntimeException("Plant must be Active ");
         }
 
-        CarModelResponseDto carModelResponseDto=productionClient.getCarModelById(requestDto.getCarModelId()).getBody();
+        CarModelResponseDto carModelResponseDto= Objects.requireNonNull(productionClient.getCarModelById(requestDto.getCarModelId()).getBody()).getData();
         assert carModelResponseDto != null;
-        if(!Boolean.TRUE.equals(carModelResponseDto.isActive())){
+        if(!carModelResponseDto.isActive()){
             throw new RuntimeException("CarModel must be Active ");
         }
 

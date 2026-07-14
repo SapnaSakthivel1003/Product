@@ -15,13 +15,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
-
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -43,15 +43,12 @@ public class QualityInspectionServiceImp implements QualityInspectionService{
         if (requestDto == null || requestDto.getInspectorId() == null || requestDto.getProductionOrderId()==null) {
             throw new IllegalArgumentException("ID's must not be null in the request data.");
         }
-        Boolean employeeExists = productionClient.existsEmployeeById(requestDto.getInspectorId());
 
-        if (Boolean.FALSE.equals(employeeExists)) {
-            throw new IllegalArgumentException("Plant ID " + requestDto.getInspectorId() + " does not exist in master data.");
-        }
         if (!productRepository.existsById(requestDto.getProductionOrderId())) {
             throw new IllegalArgumentException("Foreign key violation: Plant ID  does not exist.");
         }
-        EmployeeResponseDto employeeResponseDto=productionClient.getEmployeeById(requestDto.getInspectorId()).getBody();
+        EmployeeResponseDto employeeResponseDto;
+        employeeResponseDto = Objects.requireNonNull(productionClient.getEmployeeById(requestDto.getInspectorId()).getBody()).getData();
         assert employeeResponseDto != null;
         if(Boolean.FALSE.equals(employeeResponseDto.getIsActive())){
             throw new RuntimeException("Employee must be Active ");
@@ -84,19 +81,19 @@ public class QualityInspectionServiceImp implements QualityInspectionService{
                 .orElseThrow(() -> new RuntimeException("Employee not found with ID: " + id));
 
         String oldResult = String.valueOf(existingQualityInspection.getInspectionResult());
-        Boolean employeeExists = productionClient.existsEmployeeById(requestDto.getInspectorId());
+        EmployeeResponseDto employeeResponseDto= Objects.requireNonNull(productionClient.getEmployeeById(requestDto.getInspectorId()).getBody()).getData();
+        if (employeeResponseDto == null) {
+            throw new RuntimeException("Employee data is missing");
+        }
+        boolean isActive = employeeResponseDto.getIsActive() != null && employeeResponseDto.getIsActive();
 
-        if (Boolean.FALSE.equals(employeeExists)) {
-            throw new IllegalArgumentException("employeeExists ID " + requestDto.getInspectorId() + " does not exist in master data.");
+        if (!isActive) {
+            throw new RuntimeException("Employee must be Active");
         }
         if (!productRepository.existsById(requestDto.getProductionOrderId())) {
             throw new IllegalArgumentException("Foreign key violation: production ID  does not exist.");
         }
-        EmployeeResponseDto employeeResponseDto=productionClient.getEmployeeById(requestDto.getInspectorId()).getBody();
-        assert employeeResponseDto != null;
-        if(Boolean.FALSE.equals(employeeResponseDto.getIsActive())){
-            throw new RuntimeException("Employee must be Active ");
-        }
+
         UserContext context = UserContextHolder.getContext();
         Long userId = (context != null && context.getUserId() != null) ? context.getUserId() : 0L;
         existingQualityInspection.setInspectionResult(requestDto.getInspectionResult());

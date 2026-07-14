@@ -42,26 +42,29 @@ public class VehicleInventoryServiceImp implements VehicleInventoryService {
         if (requestDto == null || requestDto.getProductionOrder() == null || requestDto.getCarModel()==null) {
             throw new IllegalArgumentException("ID's must not be null in the request data.");
         }
-        Boolean carModelExists = productionClient.existsCarModelById(requestDto.getCarModel());
 
-        if (Boolean.FALSE.equals(carModelExists)) {
-            throw new IllegalArgumentException("CarModel ID " + requestDto.getCarModel() + " does not exist in master data.");
-        }
         if (!productRepository.existsById(requestDto.getProductionOrder())) {
             throw new IllegalArgumentException("Foreign key violation: ProductionOrder ID  does not exist.");
         }
-        CarModelResponseDto carModelResponseDto=productionClient.getCarModelById(requestDto.getCarModel()).getBody();
-        List<String> data = null;
-        if (carModelResponseDto != null) {
-            data = Collections.singletonList(String.valueOf(carModelResponseDto.getColorOptions()));
-        }
-        assert data != null;
-        boolean hasWhite = data.contains(requestDto.getColor());
+        CarModelResponseDto carModelResponseDto = productionClient.getCarModelById(requestDto.getCarModel()).getBody().getData();
 
-        if(!hasWhite){
+        if (carModelResponseDto == null || carModelResponseDto.getColorOptions() == null || carModelResponseDto.getColorOptions().isEmpty()) {
+            throw new RuntimeException("Car model or color options not found");
+        }
+        String rawColorString = carModelResponseDto.getColorOptions().get(0);
+        String cleanColors = rawColorString.replace("[", "")
+                .replace("]", "")
+                .replace("\"", "");
+        List<String> validColors = Arrays.stream(cleanColors.split(","))
+                .map(String::trim)
+                .collect(Collectors.toList());
+        String requestedColor = requestDto.getColor() != null ? requestDto.getColor().trim() : "";
+        boolean isValidColor = validColors.stream()
+                .anyMatch(color -> color.equalsIgnoreCase(requestedColor));
+
+        if (!isValidColor) {
             throw new RuntimeException("choose color from the car model");
         }
-
         if(!carModelResponseDto.isActive()){
             throw new RuntimeException("CarModel must be Active ");
         }
@@ -92,16 +95,10 @@ public class VehicleInventoryServiceImp implements VehicleInventoryService {
         VehicleInventory existingVehicleInventory = vehicleInventoryRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("VehicleInventory not found with ID: " + id));
 
-        Boolean carModelExists = productionClient.existsCarModelById(requestDto.getCarModel());
-
-        if (Boolean.FALSE.equals(carModelExists)) {
-            throw new IllegalArgumentException("CarModel ID " + requestDto.getCarModel() + " does not exist in master data.");
-        }
         if (!productRepository.existsById(requestDto.getProductionOrder())) {
             throw new IllegalArgumentException("Foreign key violation: ProductionOrder ID  does not exist.");
         }
-
-        CarModelResponseDto carModelResponseDto=productionClient.getCarModelById(requestDto.getCarModel()).getBody();
+        CarModelResponseDto carModelResponseDto= productionClient.getCarModelById(requestDto.getCarModel()).getBody().getData();
         assert carModelResponseDto != null;
         if(!carModelResponseDto.isActive()){
             throw new RuntimeException("CarModel must be Active ");
@@ -151,7 +148,9 @@ public class VehicleInventoryServiceImp implements VehicleInventoryService {
         }
         vehicleInventoryRepository.deleteById(id);
     }
-
+    public boolean existsById(Long id) {
+        return vehicleInventoryRepository.existsById(id);
+    }
 
     @Override
     @Transactional

@@ -20,7 +20,6 @@ public class QualityInspectionMapper {
         qualityInspection.setInspectionResult(dto.getInspectionResult());
         qualityInspection.setRemarks(dto.getRemarks());
         qualityInspection.setInspectedAt(dto.getInspectedAt());
-
         return qualityInspection;
     }
 

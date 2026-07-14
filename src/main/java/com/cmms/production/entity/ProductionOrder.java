@@ -30,7 +30,7 @@ public class ProductionOrder {
     @Column( unique = true, nullable = false)
     private String orderNumber;
     @NotNull
-    private Long plantId;
+        private Long plantId;
 
     @NotNull(message = "Car Model ID is required")
     @Column(nullable = false)
