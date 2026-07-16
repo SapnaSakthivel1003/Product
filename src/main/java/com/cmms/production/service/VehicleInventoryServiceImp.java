@@ -1,16 +1,13 @@
 package com.cmms.production.service;
 
-
 import com.cmms.production.dto.CarModelResponseDto;
 import com.cmms.production.dto.DataChangeEventDto;
 import com.cmms.production.dto.VehicleInventoryRequestDto;
 import com.cmms.production.dto.VehicleInventoryResponseDto;
-import com.cmms.production.entity.ProductionOrder;
-import com.cmms.production.entity.QualityInspection;
 import com.cmms.production.entity.Status;
 import com.cmms.production.entity.VehicleInventory;
-import com.cmms.production.feignClients.AuditLogFeignClient;
-import com.cmms.production.feignClients.Production;
+import com.cmms.production.feignclients.AuditLogFeignClient;
+import com.cmms.production.feignclients.Production;
 import com.cmms.production.repository.ProductRepository;
 import com.cmms.production.repository.VehicleInventoryRepository;
 import com.cmms.production.user_context.UserContext;
@@ -19,17 +16,14 @@ import com.cmms.production.utils.VehicleInventoryMapper;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.context.config.ConfigDataResourceNotFoundException;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
-
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -48,16 +42,29 @@ public class VehicleInventoryServiceImp implements VehicleInventoryService {
         if (requestDto == null || requestDto.getProductionOrder() == null || requestDto.getCarModel()==null) {
             throw new IllegalArgumentException("ID's must not be null in the request data.");
         }
-        Boolean carMordelExists = productionClient.existsCarModelById(requestDto.getCarModel());
 
-        if (Boolean.FALSE.equals(carMordelExists)) {
-            throw new IllegalArgumentException("CarModel ID " + requestDto.getCarModel() + " does not exist in master data.");
-        }
         if (!productRepository.existsById(requestDto.getProductionOrder())) {
             throw new IllegalArgumentException("Foreign key violation: ProductionOrder ID  does not exist.");
         }
-        CarModelResponseDto carModelResponseDto=productionClient.getCarModelById(requestDto.getCarModel()).getBody();
-        assert carModelResponseDto != null;
+        CarModelResponseDto carModelResponseDto = productionClient.getCarModelById(requestDto.getCarModel()).getBody().getData();
+
+        if (carModelResponseDto == null || carModelResponseDto.getColorOptions() == null || carModelResponseDto.getColorOptions().isEmpty()) {
+            throw new RuntimeException("Car model or color options not found");
+        }
+        String rawColorString = carModelResponseDto.getColorOptions().get(0);
+        String cleanColors = rawColorString.replace("[", "")
+                .replace("]", "")
+                .replace("\"", "");
+        List<String> validColors = Arrays.stream(cleanColors.split(","))
+                .map(String::trim)
+                .collect(Collectors.toList());
+        String requestedColor = requestDto.getColor() != null ? requestDto.getColor().trim() : "";
+        boolean isValidColor = validColors.stream()
+                .anyMatch(color -> color.equalsIgnoreCase(requestedColor));
+
+        if (!isValidColor) {
+            throw new RuntimeException("choose color from the car model");
+        }
         if(!carModelResponseDto.isActive()){
             throw new RuntimeException("CarModel must be Active ");
         }
@@ -88,16 +95,10 @@ public class VehicleInventoryServiceImp implements VehicleInventoryService {
         VehicleInventory existingVehicleInventory = vehicleInventoryRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("VehicleInventory not found with ID: " + id));
 
-        Boolean carMordelExists = productionClient.existsCarModelById(requestDto.getCarModel());
-
-        if (Boolean.FALSE.equals(carMordelExists)) {
-            throw new IllegalArgumentException("CarModel ID " + requestDto.getCarModel() + " does not exist in master data.");
-        }
         if (!productRepository.existsById(requestDto.getProductionOrder())) {
             throw new IllegalArgumentException("Foreign key violation: ProductionOrder ID  does not exist.");
         }
-
-        CarModelResponseDto carModelResponseDto=productionClient.getCarModelById(requestDto.getCarModel()).getBody();
+        CarModelResponseDto carModelResponseDto= productionClient.getCarModelById(requestDto.getCarModel()).getBody().getData();
         assert carModelResponseDto != null;
         if(!carModelResponseDto.isActive()){
             throw new RuntimeException("CarModel must be Active ");
@@ -147,7 +148,9 @@ public class VehicleInventoryServiceImp implements VehicleInventoryService {
         }
         vehicleInventoryRepository.deleteById(id);
     }
-
+    public boolean existsById(Long id) {
+        return vehicleInventoryRepository.existsById(id);
+    }
 
     @Override
     @Transactional
@@ -156,7 +159,8 @@ public class VehicleInventoryServiceImp implements VehicleInventoryService {
 
         VehicleInventory vehicle = vehicleInventoryRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Vehicle inventory record not found with ID: " + id));
-        if ("DELIVERED".equals(vehicle.getStatus())) {
+         String statusDelivery = "DELIVERED";
+         if (Objects.equals(vehicle.getStatus(), statusDelivery)) {
             throw new IllegalStateException("Cannot update status. This vehicle has already been delivered.");
         }
         vehicle.setStatus(Status.valueOf(status.toUpperCase()));

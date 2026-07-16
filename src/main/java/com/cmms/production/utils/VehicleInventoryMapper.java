@@ -7,7 +7,6 @@ import com.cmms.production.entity.VehicleInventory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
 
 @Component
 @RequiredArgsConstructor

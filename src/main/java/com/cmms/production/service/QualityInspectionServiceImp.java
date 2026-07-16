@@ -1,33 +1,27 @@
 package com.cmms.production.service;
 
 import com.cmms.production.dto.*;
-import com.cmms.production.entity.OrderStatus;
-import com.cmms.production.entity.ProductionOrder;
 import com.cmms.production.entity.QualityInspection;
-import com.cmms.production.entity.Result;
-import com.cmms.production.feignClients.AuditLogFeignClient;
-import com.cmms.production.feignClients.NotifyFeignClient;
-import com.cmms.production.feignClients.Production;
-import com.cmms.production.feignClients.UserClient;
+import com.cmms.production.feignclients.AuditLogFeignClient;
+import com.cmms.production.feignclients.NotifyFeignClient;
+import com.cmms.production.feignclients.Production;
+import com.cmms.production.feignclients.UserClient;
 import com.cmms.production.repository.ProductRepository;
 import com.cmms.production.repository.QualityInspectionRepository;
 import com.cmms.production.user_context.UserContext;
 import com.cmms.production.user_context.UserContextHolder;
 import com.cmms.production.utils.QualityInspectionMapper;
-import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
-
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -49,15 +43,12 @@ public class QualityInspectionServiceImp implements QualityInspectionService{
         if (requestDto == null || requestDto.getInspectorId() == null || requestDto.getProductionOrderId()==null) {
             throw new IllegalArgumentException("ID's must not be null in the request data.");
         }
-        Boolean employeeExists = productionClient.existsEmployeeById(requestDto.getInspectorId());
 
-        if (Boolean.FALSE.equals(employeeExists)) {
-            throw new IllegalArgumentException("Plant ID " + requestDto.getInspectorId() + " does not exist in master data.");
-        }
         if (!productRepository.existsById(requestDto.getProductionOrderId())) {
             throw new IllegalArgumentException("Foreign key violation: Plant ID  does not exist.");
         }
-        EmployeeResponseDto employeeResponseDto=productionClient.getEmployeeById(requestDto.getInspectorId()).getBody();
+        EmployeeResponseDto employeeResponseDto;
+        employeeResponseDto = Objects.requireNonNull(productionClient.getEmployeeById(requestDto.getInspectorId()).getBody()).getData();
         assert employeeResponseDto != null;
         if(Boolean.FALSE.equals(employeeResponseDto.getIsActive())){
             throw new RuntimeException("Employee must be Active ");
@@ -90,19 +81,19 @@ public class QualityInspectionServiceImp implements QualityInspectionService{
                 .orElseThrow(() -> new RuntimeException("Employee not found with ID: " + id));
 
         String oldResult = String.valueOf(existingQualityInspection.getInspectionResult());
-        Boolean employeeExists = productionClient.existsEmployeeById(requestDto.getInspectorId());
+        EmployeeResponseDto employeeResponseDto= Objects.requireNonNull(productionClient.getEmployeeById(requestDto.getInspectorId()).getBody()).getData();
+        if (employeeResponseDto == null) {
+            throw new RuntimeException("Employee data is missing");
+        }
+        boolean isActive = employeeResponseDto.getIsActive() != null && employeeResponseDto.getIsActive();
 
-        if (Boolean.FALSE.equals(employeeExists)) {
-            throw new IllegalArgumentException("employeeExists ID " + requestDto.getInspectorId() + " does not exist in master data.");
+        if (!isActive) {
+            throw new RuntimeException("Employee must be Active");
         }
         if (!productRepository.existsById(requestDto.getProductionOrderId())) {
             throw new IllegalArgumentException("Foreign key violation: production ID  does not exist.");
         }
-        EmployeeResponseDto employeeResponseDto=productionClient.getEmployeeById(requestDto.getInspectorId()).getBody();
-        assert employeeResponseDto != null;
-        if(Boolean.FALSE.equals(employeeResponseDto.getIsActive())){
-            throw new RuntimeException("Employee must be Active ");
-        }
+
         UserContext context = UserContextHolder.getContext();
         Long userId = (context != null && context.getUserId() != null) ? context.getUserId() : 0L;
         existingQualityInspection.setInspectionResult(requestDto.getInspectionResult());
@@ -118,8 +109,7 @@ public class QualityInspectionServiceImp implements QualityInspectionService{
                 log.info(">>> [QUALITY] State transitioned to FAIL. Triggering Plant Manager notifications.");
                 sendNotifyRequest("PLANT_MANAGER", savedQualityInspection);
 
-
-                List<String> plantManagerEmails = List.of("sapnasakthivel794@gmail.com", "6036sapna@gmail.com");
+                List<String> plantManagerEmails = List.of("sapna.s@mitrahsoft.in");
                 for (String email : plantManagerEmails) {
                     emailNotificationService.sendFailureEmail(
                             email,
